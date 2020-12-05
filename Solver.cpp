@@ -19,8 +19,9 @@ double** Solver::SOR(double** Ae, double** Aw, double** An, double** As, double*
 {
 	double** ss = new double* [Nxx];
 	double** ss0 = new double* [Nxx];
-	double tol = 1e-7, w = 1.71;
+	double tol = 1e-7, w = 1.8;
 	int iw, jw, ie, je, is, js, in, jn;
+	int tt = 0;
 	for(int i = 0; i < Nxx; i++)
 	{
 		ss[i] = new double [Nyy];
@@ -29,7 +30,7 @@ double** Solver::SOR(double** Ae, double** Aw, double** An, double** As, double*
 			ss[i][j] = 0;
 	}
 	double sum, res = 1.0;
-	while (res > tol)
+	while (res > tol && tt <= 100000)
 	{
 		sum = 0.0;
 		for(int i = 0; i < Nxx; i++)
@@ -41,18 +42,23 @@ double** Solver::SOR(double** Ae, double** Aw, double** An, double** As, double*
 				if (iw == -1) iw = 0;
 				ie = i + 1; je = j;
 				if (ie == Nxx) ie = Nxx - 1;
-				is = i; js = Nyy - 1;
+				is = i; js = j - 1;
 				if (js == -1) js = 0;
-				in = i; jn = 0;
+				in = i; jn = j + 1;
 				if (jn == Nyy) jn = Nyy -1;
 				ss[i][j] = (1 - w) * ss[i][j] + w / Ap[i][j] * (rhs[i][j] -Ae[i][j] * ss[ie][je] - Aw[i][j] * ss[iw][jw]
 					-An[i][j] * ss[in][jn] - As[i][j] * ss[is][js]);
 			}
 		}
 		for(int i = 0; i < Nxx; i++)
-			for(int j = 0; j < Nyy; j++)
+			for (int j = 0; j < Nyy; j++)
 				sum += (ss[i][j] - ss0[i][j]) * (ss[i][j] - ss0[i][j]);
 		res = sqrt(sum);
+		//cout << sum << endl;
+		tt = tt + 1;
+		//if (tt >= 30000)
+		//cout << sum << endl;
 	}	
+	cout << tt << endl;
 	return ss;
 }

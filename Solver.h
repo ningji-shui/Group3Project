@@ -1,6 +1,8 @@
 #ifndef _Solver_
 #define _Solver_
 #include <math.h>
+#include <iostream>
+using namespace std;
 class Solver
 {
 public:
