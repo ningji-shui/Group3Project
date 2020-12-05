@@ -1,6 +1,9 @@
 #include <math.h>
 #include "Flow.h"
 #include "Solver.h"
+#include <iostream>
+
+using namespace std;
 
 Flow::Flow()
 {
@@ -117,25 +120,33 @@ double Flow::p(int i_, int j_)
 
 void Flow::updateFlow()
 {
-	//Step 1 to get ustar and vstar
-	getustar();
-	getvstar();
-	//Correct for mass conservation Ning
-	double sum1 = 0., sum2 = 0., kk;
-	for (int j = 0; j < Mesh::Ny; j++)
+	double t = 0.;
+	int ddd = 0;
+	while (t < Flow::T)
 	{
-		sum1 += ustar[0][j];
-		sum2 += ustar[Nx][j];
-	}
-	kk = sum1 / sum2;
-	for (int j = 0; j < Mesh::Ny; j++)
-		ustar[Nx][j] = kk * ustar[Nx][j];
-	//Step 2
-	getpp();
+		//Step 1 to get ustar and vstar
+		getustar();
+		getvstar();
+		//Correct for mass conservation Ning
+		double sum1 = 0., sum2 = 0., kk;
+		for (int j = 0; j < Mesh::Ny; j++)
+		{
+			sum1 += ustar[0][j];
+			sum2 += ustar[Mesh::Nx][j];
+		}
+		kk = sum1 / sum2;
+		for (int j = 0; j < Mesh::Ny; j++)
+			ustar[Mesh::Nx][j] = kk * ustar[Mesh::Nx][j];
+		//Step 2
+		getpp();
 
-	//Step 3
-	getuu();
-	getvv();
+		//Step 3
+		getuu();
+		getvv();
+		t += Flow::dt;
+		ddd += 1;
+		cout << "happy" << endl;
+	}
 }
 
 double Flow::getHx(int i_, int j_)
@@ -180,7 +191,7 @@ void Flow::getustar()
 		}
 	}
 
-	for (int i = 1; i < =Mesh::Nx; i++) //
+	for (int i = 1; i <= Mesh::Nx; i++) //
 	{
 		double* rhs = new double[Mesh::Ny];
 		for (int j = 0; j < Mesh::Ny; j++) rhs[j] = ustar2[j][i - 1];	
@@ -257,7 +268,8 @@ void Flow::getvstar()
 		double* rhs = new double[Mesh::Ny - 1];
 		for (int j = 0; j < Mesh::Ny - 1; j++) rhs[j] = vstar2[j][i];	
 		Solver* solver2 = new Solver;
-		vstar[i] + 1 = solver2->GaussElimination(diag, upper, lower, rhs, Mesh::Ny - 1);
+		vstar[i] = vstar[i] + 1;
+		vstar[i] = solver2->GaussElimination(diag, upper, lower, rhs, Mesh::Ny - 1);
 	}
 	/*for (int i = 0; i < Mesh::Nx; j++)
 	{
@@ -307,12 +319,12 @@ void Flow::getpp()
 {
 
 	Solver* solver5 = new Solver;
-	Ae = new double* [Mesh::Nx];
-	Aw = new double* [Mesh::Nx];
-	As = new double* [Mesh::Nx];
-	An = new double* [Mesh::Nx];
-	Ap = new double* [Mesh::Nx];
-	rhs = new double* [Mesh::Nx];
+	double** Ae = new double* [Mesh::Nx];
+	double**  Aw = new double* [Mesh::Nx];
+	double**  As = new double* [Mesh::Nx];
+	double**  An = new double* [Mesh::Nx];
+	double**  Ap = new double* [Mesh::Nx];
+	double**  rhs = new double* [Mesh::Nx];
 	for (int i = 0; i < Mesh::Nx; i++)
 	{
 		Ae[i] = new double[Mesh::Ny];
@@ -331,7 +343,7 @@ void Flow::getpp()
 			rhs[i][j] = dt * ((ustar[i + 1][j] - ustar[i][j]) / dx + (vstar[i][j + 1] - vstar[i][j]) / dy);
 		}
 	}
-	double* pp = solver5->SOR(double** Ae, double** Aw, double** An, double** As, double** Ap, double** rhs, int Mesh::Nx, int Mesh::Ny);
+	pp = solver5->SOR(Ae, Aw, An, As, Ap, rhs, Mesh::Nx, Mesh::Ny);
 	//Reshape for pressure to a 2D matrix
 	
 

@@ -1,4 +1,5 @@
 #include "Flow.h"
+#include <iostream>
 
 using namespace std;
 
@@ -12,24 +13,19 @@ int Mesh::Nx = 128;
 int Mesh::Ny = 64;
 
 //Simulation time
-double Flow::T = 100.;
+double Flow::T = 1.;
 
 //Time step
 double Flow::dt = 0.001;
 
 //Reynold number
-double Flow::Re = 1.;
+double Flow::Re = 10000.;
 
 int main()
 {
 	Flow* flow = new Flow;
-	double t = 0.;
-	while (t < Flow::T)
-	{
-		flow->updateFlow;
 
+		flow->updateFlow();
 
-		t += Flow::dt;
-	}
 	return 0;
 }
