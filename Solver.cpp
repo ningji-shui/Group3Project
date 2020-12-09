@@ -33,11 +33,14 @@ double** Solver::SOR(double** Ae, double** Aw, double** An, double** As, double*
 	while (res > tol && tt <= 100000)
 	{
 		sum = 0.0;
+		for (int i = 0; i < Nxx; i++)
+			for (int j = 0; j < Nyy; j++)
+				ss0[i][j] = ss[i][j];
 		for(int i = 0; i < Nxx; i++)
 		{
 			for(int j = 0; j < Nyy; j++)
 			{
-				ss0[i][j] = ss[i][j];
+				//ss0[i][j] = ss[i][j];
 				iw = i - 1; jw = j;
 				if (iw == -1) iw = 0;
 				ie = i + 1; je = j;
@@ -48,11 +51,16 @@ double** Solver::SOR(double** Ae, double** Aw, double** An, double** As, double*
 				if (jn == Nyy) jn = Nyy -1;
 				ss[i][j] = (1 - w) * ss[i][j] + w / Ap[i][j] * (rhs[i][j] -Ae[i][j] * ss[ie][je] - Aw[i][j] * ss[iw][jw]
 					-An[i][j] * ss[in][jn] - As[i][j] * ss[is][js]);
+				//ss[i][j] =1 / Ap[i][j] * (rhs[i][j] - Ae[i][j] * ss0[ie][je] - Aw[i][j] * ss0[iw][jw]
+					//- An[i][j] * ss0[in][jn] - As[i][j] * ss0[is][js]);
 			}
 		}
-		for(int i = 0; i < Nxx; i++)
+		for (int i = 0; i < Nxx; i++)
+		{
 			for (int j = 0; j < Nyy; j++)
 				sum += (ss[i][j] - ss0[i][j]) * (ss[i][j] - ss0[i][j]);
+			//cout << ss[i][0] << " " << ss[i][63] << endl;
+		}
 		res = sqrt(sum);
 		//cout << sum << endl;
 		tt = tt + 1;

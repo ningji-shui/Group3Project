@@ -14,7 +14,7 @@ int Mesh::Nx = 128;
 int Mesh::Ny = 64;
 
 //Simulation time
-double Flow::T = 0.050;
+double Flow::T = 1.170;
 
 //Time step
 double Flow::dt = 0.001;

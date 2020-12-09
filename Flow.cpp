@@ -66,7 +66,9 @@ Flow::Flow()
 
 
 	//Set up left boundary condition
-	for (int j = 0; j < Mesh::Ny; j++) uu[0][j] = exp(-(mesh->yc[j] - 0.5) * (mesh->yc[j] - 0.5) / R / R); 
+	for (int j = 0; j < Mesh::Ny; j++)
+		uu[0][j] = exp(-(mesh->yc[j] - 0.5) * (mesh->yc[j] - 0.5) / R / R); 
+		//uu[0][j] = 0.01;
 	
 	alpha = dt / (2. * Re * dx * dx);
 
@@ -103,7 +105,8 @@ double Flow::u(int i_, int j_)
 	if (j_ == Mesh::Ny) j_ = Mesh::Ny - 1;
 	if (i_ == Mesh::Nx + 1) i_ = Mesh::Nx - 1;
 	if (i_ == 0)
-		return exp(-(mesh->yf[j_] - 0.5) * (mesh->yf[j_] - 0.5) / R / R);
+		return exp(-(mesh->yc[j_] - 0.5) * (mesh->yc[j_] - 0.5) / R / R);
+		//return 0.01;
 	else
 		return uu[i_][j_];
 }
@@ -152,7 +155,7 @@ void Flow::updateFlow()
 			sum1 += ustar[0][j];
 			sum2 += ustar[Mesh::Nx][j];
 		}
-
+		//cout << ustar[40][0] << " " << ustar[40][63] << " " << vstar[52][1] << " " << vstar[52][62] << endl;
 		kk = sum1 - sum2;
 		for (int j = 0; j < Mesh::Ny; j++)
 		{
@@ -170,10 +173,13 @@ void Flow::updateFlow()
 		//Step 3
 		getuu();
 		getvv();
-		t += Flow::dt;
+		
+		
+		t += dt ;
 		ddd += 1;
+		//if (ddd % 250 == 0) dt = dt * 0.75;
 		//if (ddd % 20 == 0)
-		cout << ddd << " happy" << endl;
+		cout << ddd << " happy " << dt << endl; //<< " " << kk / Mesh::Ny << " " << pp[127][0] << " " << uu[127][63] << endl;
 	}
 }
 
@@ -224,16 +230,16 @@ void Flow::getustar()
 			rhs[j] = ustar2[j][i - 1];
 			//cout << j << " " << diag[j] << " " << lower[j] << " " << rhs[j] << endl;
 		}
+		//cout << rhs[0] << " " << rhs[63] << endl;
 		Solver* solver2 = new Solver;
 		ustar[i] = solver2->GaussElimination(diag, upper, lower, rhs, Mesh::Ny);
 		//for (int j = 0; j < Mesh::Ny; j++)
 		//	cout << j << " " << ustar[i][j] << endl;
 	}
-	/*for (int j = 0; j < Mesh::Ny; j++)
+	for (int j = 0; j < Mesh::Ny; j++)
 	{
-		ustar[0] = new double[Mesh::Ny];
 		ustar[0][j] = 0.;
-	}*/
+	}
 	//get ustar from delta_ustar
 	for (int i = 0; i < Mesh::Nx + 1; i++)
 	{
@@ -262,10 +268,13 @@ double* Flow::getustar2(int j)
 	for (int i = 1; i <= Mesh::Nx; i++)
 	{
 		double newH = getHx(i, j);
+		//if (j == 0 || j == 63)
 		rhsu2[i - 1] = dt / 2. * (3 * newH - Hx[i - 1][j])
 			+ dt / Re * (u(i + 1, j) + u(i - 1, j) - 2. * u(i, j)) / dx / dx
 			+ dt / Re * (u(i, j + 1) + u(i, j - 1) - 2. * u(i, j)) / dy / dy;
 		Hx[i - 1][j] = newH;
+		//if (j == 0 || j == 63)
+		//	cout << j << " " << rhsu2[i - 1] << endl;
 //		cout << i << " " << diag[i - 1] << " " << lower[i - 1] << " " << rhsu2[i - 1] << endl;
 	}
 	
@@ -285,13 +294,13 @@ void Flow::getvstar()
 	for (int j = 0; j < Mesh::Ny - 1; j++)
 	{
 		vstar2[j] = new double[Mesh::Nx];
-		vstar2[j] = getustar2(j);
+		vstar2[j] = getvstar2(j + 1);
 	}
 	
 	double* lower = new double[Mesh::Ny - 1];
 	double* diag = new double[Mesh::Ny - 1];
 	double* upper = new double[Mesh::Ny - 1];
-
+	double* rhs = new double[Mesh::Ny - 1];
 	for (int j = 0; j < Mesh::Ny - 1; j++)
 	{
 			lower[j] = -alpha;
@@ -302,17 +311,21 @@ void Flow::getvstar()
 
 	for (int i = 0; i < Mesh::Nx; i++) 
 	{
-		double* rhs = new double[Mesh::Ny - 1];
 		for (int j = 0; j < Mesh::Ny - 1; j++) rhs[j] = vstar2[j][i];	
 		Solver* solver2 = new Solver;
-		vstar[i] = vstar[i] + 1;
+		//vstar[i] = vstar[i] + 1;
 		vstar[i] = solver2->GaussElimination(diag, upper, lower, rhs, Mesh::Ny - 1);
+		//cout << rhs[0] << " " << rhs[62] << endl;
+		//cout << vstar[i][0] << " " << vstar[i][62] << endl;
 	}
-	/*for (int i = 0; i < Mesh::Nx; j++)
+	for (int i = 0; i < Mesh::Nx; i++)
 	{
+		for (int j = Mesh::Ny - 1; j >= 1; j--)
+			vstar[i][j] = vstar[i][j - 1];
 		vstar[i][0] = 0.;
-		vstar[i][Ny] = 0.;
-	}*/
+		vstar[i][Mesh::Ny] = 0.;
+		//cout << vstar[i][1] << " " << vstar[i][63] << endl;
+ 	}
 	//get vstar from delta_vstar
 	for (int i = 0; i < Mesh::Nx; i++)
 	{
@@ -338,10 +351,14 @@ double* Flow::getvstar2(int j)  //j from 1 to Ny - 1
 	for (int i = 0; i < Mesh::Nx; i++)
 	{
 		double newH = getHy(i, j);
+		//if (j == 1 || j == 63)
+			//cout << j << " " << newH << " " << Hy[i][j - 1] <<  endl;
 		rhsv2[i] = dt / 2. * (3 * newH - Hy[i][j - 1])
 			+ dt / Re * (v(i + 1, j) + v(i - 1, j) - 2. * v(i, j)) / dx / dx
 			+ dt / Re * (v(i, j + 1) + v(i, j - 1) - 2. * v(i, j)) / dy / dy;
 		Hy[i][j - 1] = newH;
+		//if (j == 1 || j == 63)
+			//cout << j << " " << rhsv2[i] << endl;
 	}
 	
 	Solver* solver3 = new Solver;
@@ -375,10 +392,13 @@ void Flow::getpp()
 			An[i][j] = 1. / dy / dy;
 			Ap[i][j] = -2. / dx / dx - 2. / dy / dy;
 			rhs[i][j] = dt * ((ustar[i + 1][j] - ustar[i][j]) / dx + (vstar[i][j + 1] - vstar[i][j]) / dy);
-			//cout << i << " " << j << " " << rhs[i][j] << endl;
+			
 		}
+		//cout << i << " " << rhs[i][0] << " " << rhs[i][63] << endl;
 	}
 	pp = solver5->SOR(Ae, Aw, An, As, Ap, rhs, Mesh::Nx, Mesh::Ny);
+//	for (int i = 0; i < Mesh::Nx; i++)
+	//	cout << i << " " << pp[i][0] << " " << pp[i][63] << endl;
 	//Reshape for pressure to a 2D matrix
 	
 
